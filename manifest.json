@@ -1,0 +1,18 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "MathQuest - Smart Math Practice",
+  "orientation": "portrait",
+  "scope": "/",
+  "short_name": "mathpractice",
+  "start_url": "zesty-tarsier-5936ee.netlify.app",
+  "theme_color": "#2e7d32",
+  "id": "zesty-tarsier-5936ee.netlify.app",
+  "description": "Practice math like Duolingo with daily quizzes, streaks and gamified learning for classes 3 to 10.",
+  "lang": "en",
+  "categories": [
+    "education",
+    "productivity"
+  ]
+}
