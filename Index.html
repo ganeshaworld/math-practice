@@ -751,17 +751,19 @@ async function sendOTP(){
 
   try{
 
-      if(!window.recaptchaVerifier){
-
-          window.recaptchaVerifier =
-          new FirebaseRecaptchaVerifier(
-              window.firebaseAuth,
-              "recaptcha-container",
-              { size: "normal" }
-          );
-
-          await window.recaptchaVerifier.render();
+      if(window.recaptchaVerifier){
+          try{window.recaptchaVerifier.clear();}catch(e){}
+          window.recaptchaVerifier = null;
       }
+
+      window.recaptchaVerifier =
+      new FirebaseRecaptchaVerifier(
+          window.firebaseAuth,
+          "recaptcha-container",
+          { size: "normal" }
+      );
+
+      await window.recaptchaVerifier.render();
 
       confirmationResultGlobal =
       await FirebaseSignInWithPhoneNumber(
@@ -785,8 +787,8 @@ async function sendOTP(){
 
   }catch(err){
 
-      console.error(err);
-      toast('❌ OTP Sending Failed');
+      console.error('sendOTP error', err);
+      toast('❌ OTP Sending Failed: '+(err?.message||err?.code||'Unknown'));
 
   }
 }
