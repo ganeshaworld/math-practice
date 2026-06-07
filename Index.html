@@ -1,5 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
+  <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth,
+  RecaptchaVerifier,
+  signInWithPhoneNumber
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAKO4Nr-CwYdscvZoJkiNvc_EwAxMWiHaw",
+  authDomain: "dailymathpractice-f5dbb.firebaseapp.com",
+  projectId: "dailymathpractice-f5dbb",
+  storageBucket: "dailymathpractice-f5dbb.firebasestorage.app",
+  messagingSenderId: "1044756877579",
+  appId: "1:1044756877579:web:530acdb0720f00a5bf920e"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+window.firebaseAuth = auth;
+window.FirebaseRecaptchaVerifier = RecaptchaVerifier;
+window.FirebaseSignInWithPhoneNumber = signInWithPhoneNumber;
+</script>
+
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
@@ -392,6 +417,9 @@ textarea.fi{resize:vertical;min-height:65px}
       <button class="btn btn-p" onclick="verifyOTP()" style="margin-bottom:8px">✅ Verify & Login</button>
       <div class="resend-area" id="resend-area">Resend in <span id="resend-cd">30</span>s</div>
       <button class="btn btn-ghost" onclick="backToPhone()">← Change Number</button>
+      <div id="recaptcha-container" style="margin-top:10px">
+        <button class="btn btn-p" onclick="sendOTP()" style="width:100%">📲 Send OTP</button>
+      </div>
     </div>
   </div>
 </div>
@@ -699,20 +727,70 @@ setTimeout(()=>showPage('pg-auth'),2500);
 /* ════════════════════════════
    AUTH
 ════════════════════════════ */
-function sendOTP(){
+let confirmationResultGlobal = null;
+
+async function sendOTP(){
+
   sfx.click();
+
   const ph=document.getElementById('ph-inp').value.trim();
   const nm=document.getElementById('nm-inp').value.trim();
   const cls=parseInt(document.getElementById('cls-inp').value);
-  if(ph.length!==10){toast('⚠️ Enter valid 10-digit number');return;}
-  if(!nm){toast('⚠️ Enter your name');return;}
-  U.name=nm; U.cls=cls; U.phone=ph;
-  document.getElementById('otp-sub').innerHTML='OTP sent to +91 '+ph.slice(0,3)+'XXXX'+ph.slice(7)+'. Demo OTP: <strong>123456</strong>';
-  buildOTPBoxes();
-  document.getElementById('step-phone').style.display='none';
-  document.getElementById('step-otp').style.display='block';
-  startResend(30);
-  toast('📲 Demo OTP: 123456');
+
+  if(ph.length!==10){
+      toast('⚠️ Enter valid 10-digit number');
+      return;
+  }
+
+  if(!nm){
+      toast('⚠️ Enter your name');
+      return;
+  }
+
+  U.name=nm;
+  U.cls=cls;
+  U.phone=ph;
+
+  try{
+
+      if(!window.recaptchaVerifier){
+
+          window.recaptchaVerifier =
+          new FirebaseRecaptchaVerifier(
+              window.firebaseAuth,
+              "recaptcha-container",
+              { size: "normal" }
+          );
+
+          await window.recaptchaVerifier.render();
+      }
+
+      confirmationResultGlobal =
+      await FirebaseSignInWithPhoneNumber(
+          window.firebaseAuth,
+          "+91"+ph,
+          window.recaptchaVerifier
+      );
+
+      document.getElementById('otp-sub').innerHTML =
+      'OTP sent to +91 ' +
+      ph.slice(0,3)+'XXXX'+ph.slice(7);
+
+      buildOTPBoxes();
+
+      document.getElementById('step-phone').style.display='none';
+      document.getElementById('step-otp').style.display='block';
+
+      startResend(30);
+
+      toast('📲 OTP Sent Successfully');
+
+  }catch(err){
+
+      console.error(err);
+      toast('❌ OTP Sending Failed');
+
+  }
 }
 function buildOTPBoxes(){
   const g=document.getElementById('otp-boxes'); g.innerHTML='';
@@ -725,12 +803,38 @@ function buildOTPBoxes(){
   }
   setTimeout(()=>g.children[0]&&g.children[0].focus(),100);
 }
-function verifyOTP(){
+async function verifyOTP(){
+
   sfx.click();
-  const v=[...document.querySelectorAll('.obox')].map(b=>b.value).join('');
-  if(v.length<6){toast('⚠️ Enter all 6 digits');return;}
-  if(v==='123456'||v==='111111'){clearInterval(otpTmr);document.getElementById('otp-err').style.display='none';loginSuccess();}
-  else{sfx.wrong();document.getElementById('otp-err').style.display='block';[...document.querySelectorAll('.obox')].forEach(b=>{b.value='';b.classList.remove('filled');});document.querySelector('.obox') && document.querySelector('.obox').focus();}
+
+  const otp =
+  [...document.querySelectorAll('.obox')]
+  .map(b=>b.value)
+  .join('');
+
+  if(otp.length<6){
+      toast('⚠️ Enter all 6 digits');
+      return;
+  }
+
+  try{
+
+      await confirmationResultGlobal.confirm(otp);
+
+      clearInterval(otpTmr);
+
+      document.getElementById('otp-err').style.display='none';
+
+      loginSuccess();
+
+  }catch(err){
+
+      console.error(err);
+
+      document.getElementById('otp-err').style.display='block';
+
+      toast('❌ Invalid OTP');
+  }
 }
 function startResend(sec){
   let s=sec;
@@ -745,7 +849,9 @@ function startResend(sec){
     if(s<=0){clearInterval(otpTmr);const a=document.getElementById('resend-area');if(a)a.innerHTML='<span class="resend-lnk" onclick="resendOTP()">Resend OTP</span>';}
   },1000);
 }
-function resendOTP(){startResend(30);toast('📲 Demo OTP: 123456');}
+function resendOTP(){
+   sendOTP();
+}
 function backToPhone(){clearInterval(otpTmr);document.getElementById('step-phone').style.display='block';document.getElementById('step-otp').style.display='none';document.getElementById('otp-err').style.display='none';}
 function demoLogin(){sfx.click();const nm=document.getElementById('nm-inp').value.trim()||'Demo Student';const cls=parseInt(document.getElementById('cls-inp').value)||8;U.name=nm;U.cls=cls;U.phone='9999999999';loginSuccess();}
 function loginSuccess(){U.xp=150;U.coins=320;U.streak=4;U.dailyLeft=U.isPremium?9999:CFG.freeDaily;initProg();updateTopBar();showPage('pg-app');go('home');initChat();toast('🎉 Welcome, '+U.name+'!',3000);}
