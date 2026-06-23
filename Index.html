@@ -1,29 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
   <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getAuth,
-  RecaptchaVerifier,
-  signInWithPhoneNumber
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyAKO4Nr-CwYdscvZoJkiNvc_EwAxMWiHaw",
   authDomain: "dailymathpractice-f5dbb.firebaseapp.com",
   projectId: "dailymathpractice-f5dbb",
   storageBucket: "dailymathpractice-f5dbb.firebasestorage.app",
   messagingSenderId: "1044756877579",
-  appId: "1:1044756877579:web:530acdb0720f00a5bf920e"
+  appId: "1:1044756877579:web:530acdb0720f00a5bf920e",
+  measurementId: "G-V4H8THC5M9"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-
-window.firebaseAuth = auth;
-window.FirebaseRecaptchaVerifier = RecaptchaVerifier;
-window.FirebaseSignInWithPhoneNumber = signInWithPhoneNumber;
-</script>
+const analytics = getAnalytics(app);
+  </script>
 
 <head>
 <meta charset="UTF-8">
